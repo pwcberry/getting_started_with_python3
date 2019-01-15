@@ -10,6 +10,8 @@ the top of the file.
 
 """
 import random
+import argparse
+import sys
 import urllib.request as req
 
 class Markov:
@@ -93,6 +95,18 @@ def repl(m):
         else:
             print(result)
 
+def main(args):
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-f', '--file', help = 'input file')
+    ap.add_argument('-s', '--size', help = 'Markov size', default=1,type=int)
+
+    opts = ap.parse_args(args)
+    if opts.file:
+        m = from_file(opts.file, size = opts.size)
+        repl(m)
+
+
 if __name__ == '__main__':
-    book = from_file('heart_of_darkness.txt', size=4)
-    repl(book)
+    # book = from_file('heart_of_darkness.txt', size=4)
+    # repl(book)
+    main(sys.argv[1:])
