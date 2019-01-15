@@ -10,14 +10,20 @@ the top of the file.
 
 """
 import random
+import urllib.request as req
 
 class Markov:
-    def __init__(self, data):
+    def __init__(self, data, size=1):
         ''' This is the constructor '''
-        self.table = get_table(data)
+        # self.table = get_table(data)
+        self.tables = []
+        for i in range(size):
+            self.tables.append(get_table(data, size=i+1))
 
     def predict(self, txt):
-        options = self.table.get(txt, {})    
+        # options = self.table.get(txt, {})
+        table = self.tables[len(txt)-1]
+        options = table.get(txt, {})
         if not options:
             raise KeyError(f'{txt} not found')
 
@@ -27,8 +33,14 @@ class Markov:
                 possibles.append(key)
         return random.choice(possibles)
 
+def fetch_url(url, fname):
+    fin = req.urlopen(url)
+    data = fin.read()
+    with open(fname, mode='wb') as fout:
+        fout.write(data)
+    # context mgr closes file
 
-def get_table(txt):
+def get_table(txt, size=1):
     """
     Returns a transition table for txt
 
@@ -38,10 +50,10 @@ def get_table(txt):
 
     results = {}
     for idx in range(len(txt)):
-        char = txt[idx]
+        chars = txt[idx:idx+size]
 
         try:
-            out = txt[idx + 1]
+            out = txt[idx + size]
         except IndexError:
             break
 
@@ -56,8 +68,31 @@ def get_table(txt):
         # else:
         #     char_dict[out] = 1
 
-        char_dict = results.get(char, {})
+        char_dict = results.get(chars, {})
         char_dict.setdefault(out, 0)
         char_dict[out] += 1
-        results[char] = char_dict
+        results[chars] = char_dict
     return results
+
+def from_file(fname, size=1):
+    with open(fname) as fin:
+        data = fin.read()
+    m = Markov(data, size=size)
+    return m
+
+def repl(m):
+    print('Welcome to the Markov REPL')
+    while True:
+        txt = input('>')
+        try:
+            result = m.predict(txt)
+        except IndexError:
+            print('Try again')
+        except KeyError:
+            print(f'"{txt}" not found')
+        else:
+            print(result)
+
+if __name__ == '__main__':
+    book = from_file('heart_of_darkness.txt', size=4)
+    repl(book)
